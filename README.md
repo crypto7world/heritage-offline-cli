@@ -1,2 +1,2 @@
 # heritage-offline-cli
-A simple CLI binary made to work with the btc-heritage library. It is intended to be used on an air gapped computer and can manages private keys, generates extended public keys and sign PSBTs
+A simple CLI binary managing private keys, made to work in tandem with the btc-heritage library. It is intended to be used on an air gapped computer and manages wallets' private keys, generates extended public keys, display and sign PSBTs.

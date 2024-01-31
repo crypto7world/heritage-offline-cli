@@ -1,0 +1,25 @@
+[package]
+name = "heritage-offline-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Crypto7 <john@crypto7.world>"]
+description = "A simple CLI binary managing private keys, made to work in tandem with the btc-heritage library"
+repository = "https://github.com/crypto7world/dynamodb-utils.git"
+license = "MIT"
+rust-version = "1.74.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.3", features = ["derive"] }
+bdk = { version = "0.29", default-features = false, features = ["std", "all-keys", "key-value-db"] }
+dirs-next = "2.0"
+log = "0.4"
+env_logger = "0.11"
+sled = "0.34"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rpassword = "7.3"
+
+[dev-dependencies]
+tempfile = "3"
