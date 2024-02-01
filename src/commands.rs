@@ -33,8 +33,13 @@ pub enum CliSubCommand {
         #[command(flatten)]
         mnemo_opts: MnemoOpts,
         #[arg(short='c', long, default_value="12", value_parser=["12", "15", "18", "21", "24"])]
-        /// The size of the mnemonic, must be 12, 15, 18, 21 or 24.
+        /// The number of words in the mnemonic.
         word_count: String,
+        #[arg(short, long)]
+        /// Use the given entropy instead of the local PRNG. The given entropy must
+        /// {n}be encoded in hexadecimal, its length between 128 and 256 bits and a
+        /// {n}multiple of 32bits, depending on the configured number of words.
+        entropy: Option<String>,
     },
     /// Display informations about a wallet
     ShowWalletInfo {

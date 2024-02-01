@@ -1,4 +1,5 @@
 use bdk::{bitcoin::Network, keys::bip39::WordCount, Error};
+use clap::error::Result;
 use std::path::{Path, PathBuf};
 
 /// Prepare heritage-cli home directory
@@ -68,6 +69,19 @@ pub(crate) fn mnemo_word_count_parser(arg: &str) -> Result<WordCount, String> {
         24 => Ok(WordCount::Words24),
         _ => Err("Must be 12, 15, 18, 21 or 24".to_owned()),
     }
+}
+
+pub(crate) fn hex_string_to_bytes(s: &str) -> Result<Vec<u8>, String> {
+    if s.len() % 2 != 0 {
+        return Err(format!("Invalid hexstring length: {}", s.len()));
+    }
+    (0..s.len())
+        .step_by(2)
+        .map(|i| {
+            Ok(u8::from_str_radix(&s[i..i + 2], 16)
+                .map_err(|_| format!("{} is not valid hexa", &s[i..i + 2]))?)
+        })
+        .collect::<Result<_, _>>()
 }
 
 #[cfg(test)]

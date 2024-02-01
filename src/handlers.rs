@@ -83,7 +83,9 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             wallet_opts,
             mnemo_opts,
             word_count,
+            entropy,
         } => {
+            println!("entropy={entropy:?}");
             log::debug!("Processing Generate sub-command with: {:?}", wallet_opts);
             if db_key_exist(&db, &wallet_opts.wallet_name)? {
                 return Err(Error::Generic(format!(
@@ -93,12 +95,29 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             }
             let word_count = crate::utils::mnemo_word_count_parser(&word_count)
                 .map_err(|e| Error::Generic(e))?;
-            let mnemonic = generate_mnemonic(word_count)?;
+
+            let mnemonic = if let Some(entropy_string) = entropy {
+                let entropy_bytes = crate::utils::hex_string_to_bytes(&entropy_string)
+                    .map_err(|e| Error::Generic(e))?;
+                let entropy_needed = word_count as usize;
+                let entropy_provided = entropy_bytes.len() * 8;
+                if entropy_needed != entropy_provided {
+                    return Err(Error::Generic(format!(
+                        "Mnemonic word count is equivalent to {} bits but provided entropy is {} bits",
+                        entropy_needed, entropy_provided
+                    )));
+                }
+                Mnemonic::from_entropy(&entropy_bytes).map_err(|e| Error::Generic(e.to_string()))?
+            } else {
+                generate_mnemonic(word_count)?
+            };
+
             let passphrase = if mnemo_opts.with_passphrase {
                 Some(prompt_user_for_passphrase(true)?)
             } else {
                 None
             };
+
             let new_wallet = heritage_wallet_from_mnemonic(
                 &wallet_opts.wallet_name,
                 mnemonic,
@@ -719,6 +738,8 @@ fn generate_psbt_summary(
 mod tests {
     use std::fmt::Write;
 
+    use crate::utils::hex_string_to_bytes;
+
     use super::*;
     const NETWORK: Network = Network::Regtest;
 
@@ -882,13 +903,6 @@ mod tests {
         s
     }
 
-    fn hex_string_to_bytes(s: &str) -> Vec<u8> {
-        (0..s.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-            .collect()
-    }
-
     // Verify mnemonic BIP39 English test vectors
     #[test]
     fn mnemonic_test_vectors() {
@@ -1043,7 +1057,7 @@ mod tests {
         for test_vector in test_vectors {
             let [v_entropy, v_mnemostr, v_key, v_xpriv] = test_vector;
             //let m = parse_mnemonic(v_mnemostr).unwrap();
-            let mnemo = Mnemonic::from_entropy(&hex_string_to_bytes(v_entropy)).unwrap();
+            let mnemo = Mnemonic::from_entropy(&hex_string_to_bytes(v_entropy).unwrap()).unwrap();
             let mnemostr = mnemo.to_string();
             let key = bytes_to_hex_string(mnemo.to_seed(passphrase));
             let xkey: ExtendedKey = (mnemo, Some(passphrase.to_string()))

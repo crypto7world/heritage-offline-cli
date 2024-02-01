@@ -1,6 +1,6 @@
 [package]
 name = "heritage-offline-cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Crypto7 <john@crypto7.world>"]
 description = "A simple CLI binary managing private keys, made to work in tandem with the btc-heritage library"
@@ -11,7 +11,7 @@ rust-version = "1.74.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.3", features = ["derive"] }
+clap = { version = "4.4", features = ["derive"] }
 bdk = { version = "0.29", default-features = false, features = ["std", "all-keys", "key-value-db"] }
 dirs-next = "2.0"
 log = "0.4"
