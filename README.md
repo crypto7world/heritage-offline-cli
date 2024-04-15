@@ -43,6 +43,7 @@
       <a href="#installation">Installation</a>
       <ul>
         <li><a href="#from-source">From source</a></li>
+        <li><a href="#from-pre-compiled-binaries">From pre-compiled binaries</a></li>
       </ul>
     </li>
     <li>
@@ -119,6 +120,18 @@ heritage-offline-cli # to verify it worked, should display usage instructions
 ```
 
 Alternatively you can just use `cargo build` and then copy the `heritage-offline-cli` binary from the `target` directory to wherever you like.
+
+### From pre-compiled binaries
+You can find precompiled binaries for the major platforms in the Release section of the repo:
+
+[Latest version](https://github.com/crypto7world/heritage-offline-cli/releases/latest) - [All releases](https://github.com/crypto7world/heritage-offline-cli/releases)
+
+If you wish to install the `v0.2.0` for Linux, you can run:
+```shell
+wget https://github.com/crypto7world/heritage-offline-cli/releases/download/v0.2.0/heritage-offline-cli-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+tar xvzf heritage-offline-cli-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
+./heritage-offline-cli # to verify it worked, should display usage instructions
+```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

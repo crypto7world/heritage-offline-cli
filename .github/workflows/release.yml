@@ -139,6 +139,7 @@ jobs:
       - name: Publish Release
         # The formatting here is borrowed from OpenEthereum: https://github.com/openethereum/openethereum/blob/main/.github/workflows/build.yml
         env:
+          REPO_NAME: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           body=$(cat <<- "ENDBODY"
