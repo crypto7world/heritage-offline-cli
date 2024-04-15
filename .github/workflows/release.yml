@@ -1,0 +1,158 @@
+name:   Release Suite
+
+on:
+    push:
+        tags:
+            - v*
+env:
+    RUST_VERSION: "1.74.1"
+
+jobs:
+    extract-version:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Extract version
+              run: echo "VERSION=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_OUTPUT
+              id: extract_version
+        outputs:
+            VERSION: ${{ steps.extract_version.outputs.VERSION }}
+    build:
+        name:   Build Release
+        strategy:
+            matrix:
+                arch:
+                    -   aarch64-unknown-linux-gnu
+                    -   x86_64-unknown-linux-gnu
+                    -   x86_64-apple-darwin
+                    -   x86_64-windows
+                include:
+                    -   arch: aarch64-unknown-linux-gnu
+                        runner: ubuntu-20.04
+                    -   arch: x86_64-unknown-linux-gnu
+                        runner: ubuntu-20.04
+                    -   arch: x86_64-apple-darwin
+                        runner: macos-latest
+                    -   arch: x86_64-windows
+                        runner: windows-2019
+
+        runs-on: ${{ matrix.runner }}
+        needs: extract-version
+        steps:
+            - name: Checkout sources
+              uses: actions/checkout@v4
+            - name: Get latest version of stable Rust
+              run: |
+                echo Installing Rust $RUST_VERSION
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none --profile minimal
+                export PATH="/root/.cargo/bin:$PATH"
+                rustup toolchain install $RUST_VERSION
+                rustup default $RUST_VERSION
+
+            # ==============================
+            #       Builds
+            # ==============================
+
+            - name: Build for Linux
+              if:   matrix.arch == 'aarch64-unknown-linux-gnu' || matrix.arch == 'x86_64-unknown-linux-gnu'
+              run:  |
+                cargo install cross
+                cross build --bin lighthouse --target ${{ matrix.arch }} --profile release
+                mv target/${{ matrix.arch }}/release/lighthouse ~/.cargo/bin/lighthouse
+
+            - name: Build for Mac
+              if:   matrix.arch == 'x86_64-apple-darwin'
+              run:  cargo install --path lighthouse --force --locked --profile release
+
+            - name: Build for Windows
+              if:   matrix.arch == 'x86_64-windows'
+              run:  cargo install --path lighthouse --force --locked --profile release
+
+            - name: Create artifacts
+              if: startsWith(matrix.arch, 'x86_64-windows') != true
+              run: |
+                  mkdir artifacts
+                  mv ~/.cargo/bin/lighthouse ./artifacts
+                  cd artifacts
+                  tar -czf lighthouse-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz lighthouse
+                  mv *tar.gz* ..
+
+            - name: Create artifacts Windows
+              if: startsWith(matrix.arch, 'x86_64-windows')
+              run: |
+                  mkdir artifacts
+                  move $env:USERPROFILE/.cargo/bin/lighthouse.exe ./artifacts
+                  cd artifacts
+                  tar -czf lighthouse-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz lighthouse.exe
+                  move *tar.gz* ..
+
+            # =======================================================================
+            # Upload artifacts
+            # This is required to share artifacts between different jobs
+            # =======================================================================
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lighthouse-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz
+                  path: lighthouse-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz
+                  compression-level: 0
+
+    draft-release:
+        name:   Draft Release
+        needs:  [build, extract-version]
+        runs-on: ubuntu-latest
+        env:
+            VERSION:  ${{ needs.extract-version.outputs.VERSION }}
+        steps:
+            # This is necessary for generating the changelog. It has to come before "Download Artifacts" or else it deletes the artifacts.
+            - name: Checkout sources
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            # ==============================
+            #       Download artifacts
+            # ==============================
+
+            - name: Download artifacts
+              uses: actions/download-artifact@v4
+
+            # ==============================
+            #       Create release draft
+            # ==============================
+
+            - name: Generate Full Changelog
+              id: changelog
+              run: |
+                echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+                echo "$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 ${{ env.VERSION }}^)..${{ env.VERSION }})" >> $GITHUB_OUTPUT
+                echo "EOF" >> $GITHUB_OUTPUT
+
+            - name: Create Release Draft
+              # The formatting here is borrowed from OpenEthereum: https://github.com/openethereum/openethereum/blob/main/.github/workflows/build.yml
+              run: |
+                  body=$(cat <<- "ENDBODY"
+                  ## All Changes
+
+                  ${{ steps.changelog.outputs.CHANGELOG }}
+
+                  ## Binaries
+
+                  | System | Architecture | Binary | PGP Signature |
+                  |:---:|:---:|:---:|:---|
+                  | <img src="https://simpleicons.org/icons/apple.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-apple-darwin.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-apple-darwin.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-apple-darwin.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/apple.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-apple-darwin-portable.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-apple-darwin-portable.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-apple-darwin-portable.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/linux.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/linux.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu-portable.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu-portable.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-unknown-linux-gnu-portable.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/raspberrypi.svg" style="width: 32px;"/> | aarch64 | [lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/raspberrypi.svg" style="width: 32px;"/> | aarch64 | [lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu-portable.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu-portable.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-aarch64-unknown-linux-gnu-portable.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/windows.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-windows.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-windows.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-windows.tar.gz.asc) |
+                  | <img src="https://simpleicons.org/icons/windows.svg" style="width: 32px;"/> | x86_64 | [lighthouse-${{ env.VERSION }}-x86_64-windows-portable.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-windows-portable.tar.gz) | [PGP Signature](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/lighthouse-${{ env.VERSION }}-x86_64-windows-portable.tar.gz.asc) |
+                  | | | | |
+                  | **System** | **Option** | - | **Resource** |
+                  | <img src="https://simpleicons.org/icons/docker.svg" style="width: 32px;"/> | Docker | [${{ env.VERSION }}](https://hub.docker.com/r/${{ env.IMAGE_NAME }}/tags?page=1&ordering=last_updated&name=${{ env.VERSION }}) | [${{ env.IMAGE_NAME }}](https://hub.docker.com/r/${{ env.IMAGE_NAME }}) |
+                  ENDBODY
+                  )
+                  assets=(./lighthouse-*.tar.gz*/lighthouse-*.tar.gz*)
+                  tag_name="${{ env.VERSION }}"
+                  echo "$body" | gh release create --draft -F "-" "$tag_name" "${assets[@]}"
