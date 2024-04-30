@@ -1,6 +1,5 @@
 <div id="top"></div>
 
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -9,12 +8,12 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -66,33 +65,38 @@
 </details>
 
 <!-- ABOUT THE PROJECT -->
+
 ## About The Project
+
 The [`heritage-offline-cli`] project provides a CLI tool to manages Bitcoin wallets private keys. As its name suggest, this CLI does not embbed any online capabilities and thus is not capable to synchronize itself with the Bitcoin blockchain.
 
 It is intended for use in tandem with the [btcherit.com][heritage-wallet-service] service, which provides online capabilities such as wallet configuration, synchronization, balance display and transaction crafting (but has no signing capabilities).
 
 Here is the basic workflow between the **Bitcoin blockchain**, the [btcherit.com][heritage-wallet-service] service and the [`heritage-offline-cli`]:
+
 <div align="center">
     <img src="images/interaction-with-service.png" alt="Workflow">
     <p><i>This PNG can be edited using <a href="https://draw.io">Draw.io</a></i></p>
 </div>
 
 1. The [btcherit.com][heritage-wallet-service] service synchronize permanently with the Bitcoin blockchain;
-2. From the service, you can see and manage your wallet, and create new *unsigned transactions*;
+2. From the service, you can see and manage your wallet, and create new _unsigned transactions_;
 3. You sign those transactions using your private key(s) managed by the [`heritage-offline-cli`];
-4. From the service, you can broadcast the *signed transactions*.
+4. From the service, you can broadcast the _signed transactions_.
 
 By installing the [`heritage-offline-cli`] on an air-gapped computer you will have one of the most secure setup you can imagine for a cold wallet because your private keys never need to "touch" the Internet.
 
 Another advantage of this setup is that you only have to verify/trust the [`heritage-offline-cli`]: the [btcherit.com][heritage-wallet-service] service does not know your private keys and cannot steal your coin!
 
 ### Yeah, but I don't want to depend on an online service at all...
+
 And I understand! Be patient, and take a look at the roadmap: before the year is over, a new CLI will be available in the [`btc-heritage`] project.
 
 This new CLI will cover the usecase of the [`heritage-offline-cli`] and also provide synchronization capabilities with a Bitcoin node that you own, making it possible to manage your Heritage wallet entirely on your own!
 
 ### What is the added value of the service, once the new CLI can fully operate on its own?
-Using Taproot Bitcoin scripts to manage inheritance is only good as long as you don't forget the move your coins to "reset" the dead-man switch. The service is here to remind you of that, as well as making the operation easy or even seemless (for example, if you spend coins few months before the expiration of your deadman switch, the service will automatically use this transaction to "reset" it).
+
+Using Taproot Bitcoin scripts to manage inheritance is only good as long as you don't forget to move your coins to "reset" the dead-man switch. The service is here to remind you of that, as well as making the operation easy or even seemless (for example, if you spend coins few months before the expiration of your deadman switch, the service will automatically use this transaction to "reset" it).
 
 On the other hand if you are dead, the service will notify and help your heirs to retrieve the coins you left behind.
 
@@ -101,10 +105,28 @@ Of course you can take steps to do all that on your own, the service is simply h
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- INSTALLATION -->
+
 ## Installation
 
+### From pre-compiled binaries
+
+You can find precompiled binaries for the major platforms in the Release section of the repo:
+
+[Latest version](https://github.com/crypto7world/heritage-offline-cli/releases/latest) - [All releases](https://github.com/crypto7world/heritage-offline-cli/releases)
+
+If you wish to install the `v0.2.0` for Linux, you can run:
+
+```shell
+version="v0.2.0"
+wget https://github.com/crypto7world/heritage-offline-cli/releases/download/${version}/heritage-offline-cli-${version}-x86_64-unknown-linux-gnu.tar.gz
+tar xvzf heritage-offline-cli-${version}-x86_64-unknown-linux-gnu.tar.gz
+./heritage-offline-cli # to verify it worked, should display usage instructions
+```
+
 ### From source
+
 To install a dev version of `heritage-offline-cli` from sources, make sure you have Rust installed. You can use any method, just make sure to have the Minimum Supported Rust Version. Using [rustup.rs](https://rustup.rs/) is generally a winner:
+
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
@@ -121,32 +143,24 @@ heritage-offline-cli # to verify it worked, should display usage instructions
 
 Alternatively you can just use `cargo build` and then copy the `heritage-offline-cli` binary from the `target` directory to wherever you like.
 
-### From pre-compiled binaries
-You can find precompiled binaries for the major platforms in the Release section of the repo:
-
-[Latest version](https://github.com/crypto7world/heritage-offline-cli/releases/latest) - [All releases](https://github.com/crypto7world/heritage-offline-cli/releases)
-
-If you wish to install the `v0.2.0` for Linux, you can run:
-```shell
-wget https://github.com/crypto7world/heritage-offline-cli/releases/download/v0.2.0/heritage-offline-cli-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
-tar xvzf heritage-offline-cli-v0.2.0-x86_64-unknown-linux-gnu.tar.gz
-./heritage-offline-cli # to verify it worked, should display usage instructions
-```
-
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- USAGE -->
+
 ## Usage
 
-You can get help simply by running 
+You can get help simply by running
+
 ```shell
 heritage-offline-cli help
 ```
 
 Or, to get help about a specific command `heritage-offline-cli help <command>`, for example:
+
 ```shell
 heritage-offline-cli help generate
 ```
+
 ```
 Generate a new wallet
 
@@ -156,104 +170,129 @@ Options:
   -w, --wallet-name <WALLET_NAME>  The name of the wallet to use [default: default_wallet]
       --with-passphrase            Signals that the wallet is protected by a passphrase that will be prompted for
   -c, --word-count <WORD_COUNT>    The number of words in the mnemonic [default: 12] [possible values: 12, 15, 18, 21, 24]
-  -e, --entropy <ENTROPY>          Use the given entropy instead of the local PRNG. The given entropy must 
-                                   be encoded in hexadecimal, its length between 128 and 256 bits and a 
+  -e, --entropy <ENTROPY>          Use the given entropy instead of the local PRNG. The given entropy must
+                                   be encoded in hexadecimal, its length between 128 and 256 bits and a
                                    multiple of 32bits, depending on the configured number of words
   -h, --help                       Print help
 ```
 
 ### Create a new wallet
-Create a new *default_wallet* by simply running:
+
+Create a new _default_wallet_ by simply running:
+
 ```shell
 heritage-offline-cli generate
 ```
 
 You can also create wallets with other names, set a passphrase, use `ENTROPY` from an external source or parameter the length of the wallet mnemonic. See:
+
 ```shell
 heritage-offline-cli help generate
 ```
 
 ### Restore a wallet from seed
+
 If you already have a mnemonic you would like to restore, for example `abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`:
+
 ```shell
 heritage-offline-cli restore abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about
 ```
-<span style="color:red">**⚠ OBVIOUSLY DO NOT USE *THAT* MNEMONIC TO GENERATE YOUR BITCOIN WALLET ⚠**</span>
+
+<span style="color:red">**⛔ OBVIOUSLY DO NOT USE _THAT_ MNEMONIC TO CREATE YOUR BITCOIN WALLET ⛔**</span>
 
 You can also restore wallets with other names or using a passphrase. See:
+
 ```shell
 heritage-offline-cli help restore
 ```
 
 ### Extract eXtended public keys
+
 In order to generate addresses and synchronize from the Bitcoin blockchain on its own, the [btcherit.com][heritage-wallet-service] service needs eXtended public keys (XPub). You can see an XPub as an "address generator" that will always generate addresses that you can spend from (refer to [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) if you wish to understand exactly how that works).
 
 The [btcherit.com][heritage-wallet-service] service will typically consume one XPub each time you "reset" your dead-man switch. Therefore, your best option is to provide it from the beginning with 20 XPubs, and forget about that for the next 20 years.
 
 You can display the first 20 XPubs of your wallet:
+
 ```shell
 heritage-offline-cli get-xpubs
 ```
 
 Or you can display the first 40:
+
 ```shell
 heritage-offline-cli get-xpubs -c 40
 ```
 
 ### Retrieve heir public key
-Maybe you have a friend or a relative who want to put *YOU* in *HIS* Heritage configuration. You will need to give him a public key:
+
+Maybe you have a friend or a relative who want to put _YOU_ in _HIS_ Heritage configuration. You will need to give him a public key:
+
 ```shell
 heritage-offline-cli get-heir-pubkey
 ```
+
 By default, the address given to you is taken at the address derivation index 0. You can also retrieve other public keys at any other address using `-i`, for example:
+
 ```shell
 heritage-offline-cli get-heir-pubkey -i 12
 ```
 
 #### Nota
-You may notice that the derivation path for "Heir pub keys" always uses the hardened accout 1751476594. This *magic number* was chosen because:
+
+You may notice that the derivation path for "Heir pub keys" always uses the hardened accout 1751476594. This _magic number_ was chosen because:
+
 1. Ideally we want your "Heir pub keys" to stay unused until you inherit, so it must be derived from an account you will not normally use in your wallet;
 2. The word "heir" in Hexadecimal ASCII is 0x68656972, which in decimal translates to 1751476594.
 
 At it is an account number you will never use in any conceivable usecase, it was chosen and hardcoded in the CLI. If you really wants to use something else, you can change the code at [src/handlers.rs:575](./src/handlers.rs).
 
 ### Spending coins
+
 As a reminder, here is the workflow for spending coins using the [btcherit.com][heritage-wallet-service] service and the [`heritage-offline-cli`]:
+
 <div align="center">
     <img src="images/interaction-with-service.png" alt="Workflow">
     <p><i>This PNG can be edited using <a href="https://draw.io">Draw.io</a></i></p>
 </div>
 
-You spend coins by creating a transaction: you designate the recipients of your transaction and the amounts they will receive. Then the [btcherit.com][heritage-wallet-service] service will provide you with an *unsigned transaction*. In Bitcoin terminology, we call that a *Partially Signed Bitcoin Transaction*, or **PSBT** for short.
+You spend coins by creating a transaction: you designate the recipients of your transaction and the amounts they will receive. Then the [btcherit.com][heritage-wallet-service] service will provide you with an _unsigned transaction_. In Bitcoin terminology, we call that a _Partially Signed Bitcoin Transaction_, or **PSBT** for short.
 
 #### Display a PSBT
-As you may not want to blindly trust the [btcherit.com][heritage-wallet-service] service (or the transit over the Internet), you can use the CLI to display the PSBT (your *unsigned transaction*) before signing it.
+
+As you may not want to blindly trust the [btcherit.com][heritage-wallet-service] service (or the transit over the Internet), you can use the CLI to display the PSBT (your _unsigned transaction_) before signing it.
 
 You can do that simply by copy/pasting the PSBT as provided by the service into this CLI command:
+
 ```shell
 heritage-offline-cli display-psbt <BASE64 encoded PSBT>
 ```
+
 Doing so will allow you to verify that amounts and addresses are what you expect, i.e. what you asked for in the [btcherit.com][heritage-wallet-service] service UI.
 
 #### Sign a PSBT
+
 Once confortable with the PSBT, you can sign it:
+
 ```shell
 heritage-offline-cli sign <BASE64 encoded PSBT>
 ```
 
-Or, if you are not using the *default_wallet*:
+Or, if you are not using the _default_wallet_:
+
 ```shell
 heritage-offline-cli sign -w <wallet_name> <BASE64 encoded PSBT>
 ```
 
-The CLI will then output the *signed transaction*, still in PSBT format (it will look the same because nothing resemble a base64 string more than another base64 string, but its different 😉). You can copy/paste the resulting transaction back in the [btcherit.com][heritage-wallet-service] to broadcast it.
+The CLI will then output the _signed transaction_, still in PSBT format (it will look the same, but its different 😉). You can copy/paste the resulting transaction back in the [btcherit.com][heritage-wallet-service] to broadcast it.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- ROADMAP -->
+
 ## Roadmap
 
-The [`heritage-offline-cli`] project is destined to be archived. It is a focused, basic CLI narrowed to manage only private keys for an **Heritage wallet** (it was in fact the first piece of code I wrote for the whole **Heritage wallet** project as a 2-months old, new-born Rustacean at the time). Rather than building upon this CLI, my goal is rather to expand on the main [`btc-heritage`] project.
+The [`heritage-offline-cli`] project is destined to be archived. The CLI is narrowed to manage only private keys for an **Heritage wallet** and furthermore it is not the cleanest code (it was in fact the first piece of code I wrote for the whole **Heritage wallet** project as a 2-months old, new-born Rustacean at the time). Don't get me wrong: it works; but rather than building upon this CLI, I prefer to expand the main [`btc-heritage`] project (having multiple repository is not ideal anyway).
 
 Currently, [`btc-heritage`] only contains the core crate fueling the [btcherit.com][heritage-wallet-service] service that provide the public-facing part of the **Heritage wallet**. The crate provides all the logic allowing to manage the Heritage wallet configuration and translate them into Taproot addresses. I will add another library for private/signing operations (providing the fonctionalities currently supported by [`heritage-offline-cli`]) and a **brand new CLI** allowing both public and private operations, usage of your own Bictoin node and supporting the split-wallet scenario. When I reach that goal, before the end of 2024, the [`heritage-offline-cli`] repository will have no reason to exist anymore, as the new CLI will cover all its use-cases and more.
 
@@ -267,21 +306,24 @@ Of course, this repository will stay available as a public archive and you will 
 
 And based upon 3 Rust projects without which I would not have gotten that far:
 
-* [`bdk`]
-* [`rust-miniscript`]
-* [`rust-bitcoin`]
+- [`bdk`]
+- [`rust-miniscript`]
+- [`rust-bitcoin`]
 
 Thanks.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- MSRV -->
+
 ## Minimum Supported Rust Version (MSRV)
+
 This binary compile with Rust 1.74.1.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the MIT License. See [`LICENSE`][license-url] for more information.
@@ -289,30 +331,32 @@ Distributed under the MIT License. See [`LICENSE`][license-url] for more informa
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- CONTACT -->
+
 ## Contact
 
 John Galt - [@Crypto7W](https://twitter.com/Crypto7W) - john@crypto7.world
 
-Though my real name is Jérémie Rodon ([LinkedIn][jr-linkedin-url], [GitHub][jr-github-url]), I operate this project under the pseudonym John Galt in reference to the character of *Ayn Rand* novel [**Atlas Shrugged**](https://www.amazon.com/Atlas-Shrugged-Ayn-Rand-ebook/dp/B003V8B5XO) (and, yes, I obviously embrace John Galt philosophy).
+Though my real name is Jérémie Rodon ([LinkedIn][jr-linkedin-url], [GitHub][jr-github-url]), I operate this project under the pseudonym John Galt in reference to the character of _Ayn Rand_ novel [**Atlas Shrugged**](https://www.amazon.com/Atlas-Shrugged-Ayn-Rand-ebook/dp/B003V8B5XO) (and, yes, I obviously embrace John Galt philosophy).
 
 Project Link: [https://github.com/crypto7world/heritage-offline-cli][repo-url]
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- ACKNOWLEDGMENTS -->
+
 ## Acknowledgments
 
-* [`rust-miniscript`]
-* [`rust-bitcoin`]
-* [`bdk`]
-* [Best Readme Template](https://github.com/othneildrew/Best-README-Template)
-* [Img Shields](https://shields.io)
+- [`rust-miniscript`]
+- [`rust-bitcoin`]
+- [`bdk`]
+- [Best Readme Template](https://github.com/othneildrew/Best-README-Template)
+- [Img Shields](https://shields.io)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [heritage-wallet-service]: https://btcherit.com
 [repo-url]: https://github.com/crypto7world/heritage-offline-cli
 [`heritage-offline-cli`]: https://github.com/crypto7world/heritage-offline-cli
@@ -330,7 +374,7 @@ Project Link: [https://github.com/crypto7world/heritage-offline-cli][repo-url]
 [jr-linkedin-url]: https://linkedin.com/in/JeremieRodon
 [jr-github-url]: https://github.com/JeremieRodon
 [rust-shield]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white
-[rust-url]: https://https://www.rust-lang.org/ 
+[rust-url]: https://https://www.rust-lang.org/
 [`rust-miniscript`]: https://github.com/rust-bitcoin/rust-miniscript
 [`rust-bitcoin`]: https://github.com/rust-bitcoin/rust-bitcoin
 [`bdk`]: https://github.com/bitcoindevkit/bdk

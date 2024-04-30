@@ -1,4 +1,4 @@
-name:   Release Suite
+name: Release Suite
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
       - name: Get Rust
-        if:  matrix.arch != 'x86_64-windows'
+        if: matrix.arch != 'x86_64-windows'
         run: |
           echo Installing Rust $RUST_VERSION
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none --profile minimal
@@ -49,7 +49,7 @@ jobs:
           rustup toolchain install $RUST_VERSION
           rustup default $RUST_VERSION
       - name: Get Rust for Windows
-        if:  matrix.arch == 'x86_64-windows'
+        if: matrix.arch == 'x86_64-windows'
         run: |
           echo Installing Rust $RUST_VERSION
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none --profile minimal
@@ -64,19 +64,19 @@ jobs:
         run: rm rust-toolchain.toml
 
       - name: Build for Linux
-        if:  matrix.arch == 'aarch64-unknown-linux-gnu' || matrix.arch == 'x86_64-unknown-linux-gnu'
+        if: matrix.arch == 'aarch64-unknown-linux-gnu' || matrix.arch == 'x86_64-unknown-linux-gnu'
         run: |
           cargo install cross
           cross build --bin heritage-offline-cli --target ${{ matrix.arch }} --profile release
           mv target/${{ matrix.arch }}/release/heritage-offline-cli ~/.cargo/bin/heritage-offline-cli
 
       - name: Build for Mac
-        if:   matrix.arch == 'x86_64-apple-darwin'
-        run:  cargo install --path . --force --locked --profile release
+        if: matrix.arch == 'x86_64-apple-darwin'
+        run: cargo install --path . --force --locked --profile release
 
       - name: Build for Windows
-        if:   matrix.arch == 'x86_64-windows'
-        run:  cargo install --path . --force --locked --profile release
+        if: matrix.arch == 'x86_64-windows'
+        run: cargo install --path . --force --locked --profile release
 
       - name: Create artifacts
         if: matrix.arch != 'x86_64-windows'
@@ -93,26 +93,34 @@ jobs:
           mkdir artifacts
           move $env:USERPROFILE/.cargo/bin/heritage-offline-cli.exe ./artifacts
           cd artifacts
-          tar -czf heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz heritage-offline-cli.exe
-          move *tar.gz* ..
+          Compress-Archive -Path heritage-offline-cli.exe -DestinationPath heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.zip
+          move *zip* ..
 
       # =======================================================================
       # Upload artifacts
       # This is required to share artifacts between different jobs
       # =======================================================================
       - name: Upload artifact
+        if: matrix.arch != 'x86_64-windows'
         uses: actions/upload-artifact@v4
         with:
           name: heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz
           path: heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.tar.gz
           compression-level: 0
+      - name: Upload artifact Windows
+        if: matrix.arch == 'x86_64-windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.zip
+          path: heritage-offline-cli-${{ needs.extract-version.outputs.VERSION }}-${{ matrix.arch }}.zip
+          compression-level: 0
 
   publish-release:
-    name:   Release
-    needs:  [build, extract-version]
+    name: Release
+    needs: [build, extract-version]
     runs-on: ubuntu-latest
     env:
-      VERSION:  ${{ needs.extract-version.outputs.VERSION }}
+      VERSION: ${{ needs.extract-version.outputs.VERSION }}
     steps:
       # This is necessary for generating the changelog. It has to come before "Download Artifacts" or else it deletes the artifacts.
       - name: Checkout sources
@@ -154,9 +162,10 @@ jobs:
           | <img src="https://simpleicons.org/icons/apple.svg" style="width: 32px;"/> | x86_64 | [heritage-offline-cli-${{ env.VERSION }}-x86_64-apple-darwin.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/heritage-offline-cli-${{ env.VERSION }}-x86_64-apple-darwin.tar.gz) |
           | <img src="https://simpleicons.org/icons/linux.svg" style="width: 32px;"/> | x86_64 | [heritage-offline-cli-${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/heritage-offline-cli-${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz) |
           | <img src="https://simpleicons.org/icons/raspberrypi.svg" style="width: 32px;"/> | aarch64 | [heritage-offline-cli-${{ env.VERSION }}-aarch64-unknown-linux-gnu.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/heritage-offline-cli-${{ env.VERSION }}-aarch64-unknown-linux-gnu.tar.gz) |
-          | <img src="https://simpleicons.org/icons/windows.svg" style="width: 32px;"/> | x86_64 | [heritage-offline-cli-${{ env.VERSION }}-x86_64-windows.tar.gz](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/heritage-offline-cli-${{ env.VERSION }}-x86_64-windows.tar.gz) |
+          | <img src="https://simpleicons.org/icons/windows.svg" style="width: 32px;"/> | x86_64 | [heritage-offline-cli-${{ env.VERSION }}-x86_64-windows.zip](https://github.com/${{ env.REPO_NAME }}/releases/download/${{ env.VERSION }}/heritage-offline-cli-${{ env.VERSION }}-x86_64-windows.zip) |
           ENDBODY
           )
           assets=(./heritage-offline-cli-*.tar.gz/heritage-offline-cli-*.tar.gz)
+          assets+=(./heritage-offline-cli-*.zip/heritage-offline-cli-*.zip)
           tag_name="${{ env.VERSION }}"
           echo "$body" | gh release create --latest --title "Heritage offline CLI - $tag_name" -F "-" "$tag_name" "${assets[@]}"
