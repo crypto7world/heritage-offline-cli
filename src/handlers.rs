@@ -68,6 +68,7 @@ impl HeritagePrivateWallet {
 pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
     log::debug!("Processing {:?}", cli_opts);
     let network = cli_opts.network;
+    let wallet_name = cli_opts.wallet_name;
     let home_dir = prepare_home_dir(&cli_opts.datadir)?;
     let db = open_main_database(&home_dir, network)?;
     let secp = Secp256k1::new();
@@ -85,12 +86,12 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             word_count,
             entropy,
         } => {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
             println!("entropy={entropy:?}");
-            log::debug!("Processing Generate sub-command with: {:?}", wallet_opts);
-            if db_key_exist(&db, &wallet_opts.wallet_name)? {
+            log::debug!("Processing Generate sub-command for wallet: {wallet_name}");
+            if db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} already exists",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} already exists",
                 )));
             }
             let word_count = crate::utils::mnemo_word_count_parser(&word_count)
@@ -119,7 +120,7 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             };
 
             let new_wallet = heritage_wallet_from_mnemonic(
-                &wallet_opts.wallet_name,
+                &wallet_name,
                 mnemonic,
                 passphrase.as_ref().map(|s| s.as_str()),
                 network,
@@ -133,14 +134,14 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             serde_json::to_string_pretty(&new_wallet)?
         }
         CliSubCommand::ShowWalletInfo { wallet_opts } => {
-            log::debug!("Processing GetMnemonic sub-command with: {:?}", wallet_opts);
-            if !db_key_exist(&db, &wallet_opts.wallet_name)? {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
+            log::debug!("Processing ShowWalletInfo sub-command for wallet: {wallet_name}");
+            if !db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} does not exist",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} does not exist"
                 )));
             }
-            let wallet = get_wallet(&db, &wallet_opts.wallet_name)?;
+            let wallet = get_wallet(&db, &wallet_name)?;
             format!(
                 "{:#}",
                 json!({"name": wallet.name, "fingerprint": wallet.fingerprint, "network": wallet.network, "with_passphrase": wallet.with_passphrase,})
@@ -150,31 +151,38 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             wallet_opts,
             i_understand_what_i_am_doing: _,
         } => {
-            log::debug!("Processing GetMnemonic sub-command with: {:?}", wallet_opts);
-            if !db_key_exist(&db, &wallet_opts.wallet_name)? {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
+            log::debug!("Processing ShowPrivateWalletInfo sub-command for wallet: {wallet_name}");
+            if !db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} does not exist",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} does not exist"
                 )));
             }
-            let wallet = get_wallet(&db, &wallet_opts.wallet_name)?;
+            let wallet = get_wallet(&db, &wallet_name)?;
             serde_json::to_string_pretty(&wallet)?
         }
-        CliSubCommand::Restore {
-            words,
+        CliSubCommand::DeleteWallet {
             wallet_opts,
+            i_understand_that_i_will_lost_my_keys_forever_if_i_have_no_backup: _,
+        } => {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
+            log::debug!("Processing DeleteWallet sub-command for wallet: {wallet_name}");
+            delete_wallet(&db, &wallet_name)?;
+            format!("Wallet with name {wallet_name} has been deleted")
+        }
+        CliSubCommand::Restore {
+            wallet_opts,
+            words,
             mnemo_opts,
         } => {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
             let mnemonic = words.join(" ");
             log::debug!(
-                "Processing Restore sub-command with: {:?}, mnemonic: {}",
-                wallet_opts,
-                mnemonic
+                "Processing Restore sub-command for wallet: {wallet_name}, mnemonic: {mnemonic}"
             );
-            if db_key_exist(&db, &wallet_opts.wallet_name)? {
+            if db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} already exists",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} already exists"
                 )));
             }
             let mnemonic = parse_mnemonic(&mnemonic)?;
@@ -184,7 +192,7 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
                 None
             };
             let new_wallet = heritage_wallet_from_mnemonic(
-                &wallet_opts.wallet_name,
+                &wallet_name,
                 mnemonic,
                 passphrase.as_ref().map(|s| s.as_str()),
                 network,
@@ -195,45 +203,38 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
             serde_json::to_string_pretty(&new_wallet)?
         }
         CliSubCommand::GetXpubs { wallet_opts, count } => {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
             log::debug!(
-                "Processing GetXpubs sub-command with: {:?}, count: {}",
-                wallet_opts,
-                count
+                "Processing GetXpubs sub-command for wallet: {wallet_name}, count: {count}"
             );
-            if !db_key_exist(&db, &wallet_opts.wallet_name)? {
+            if !db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} does not exist",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} does not exist",
                 )));
             }
-            let wallet = get_wallet(&db, &wallet_opts.wallet_name)?;
+            let wallet = get_wallet(&db, &wallet_name)?;
             let xpubs = derive_accounts_xpubs(&wallet, count, network, &secp)?;
             let xpubs: Vec<String> = xpubs.into_iter().map(|xp| xp.to_string()).collect();
             xpubs.join("\n")
         }
         CliSubCommand::GetHeirPubkey { wallet_opts, index } => {
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
             log::debug!(
-                "Processing GetHeirPubkey sub-command with: {:?}, index: {}",
-                wallet_opts,
-                index
+                "Processing GetHeirPubkey sub-command for wallet: {wallet_name}, index: {index}"
             );
-            if !db_key_exist(&db, &wallet_opts.wallet_name)? {
+            if !db_key_exist(&db, &wallet_name)? {
                 return Err(Error::Generic(format!(
-                    "Wallet with name {} does not exist",
-                    wallet_opts.wallet_name
+                    "Wallet with name {wallet_name} does not exist"
                 )));
             }
-            let wallet = get_wallet(&db, &wallet_opts.wallet_name)?;
+            let wallet = get_wallet(&db, &wallet_name)?;
             let xpub = derive_descriptor_public_key(&wallet, index, network, &secp)?;
             xpub.to_string()
         }
         CliSubCommand::Sign { wallet_opts, psbt } => {
-            log::debug!(
-                "Processing Sign sub-command with: {:?}, psbt: {}",
-                wallet_opts,
-                psbt
-            );
-            let wallet = get_wallet(&db, &wallet_opts.wallet_name)?;
+            let wallet_name = wallet_opts.wallet_name.unwrap_or(wallet_name);
+            log::debug!("Processing Sign sub-command for wallet: {wallet_name}, psbt: {psbt}");
+            let wallet = get_wallet(&db, &wallet_name)?;
 
             let mut psbt = PartiallySignedTransaction::from_str(&psbt)?;
             log::debug!("{:?}", psbt);
@@ -243,8 +244,7 @@ pub(crate) fn handle_command(cli_opts: CliOpts) -> Result<String, Error> {
                 psbt.to_string()
             } else {
                 return Err(Error::Generic(format!(
-                    "No input can be signed with wallet {}",
-                    wallet_opts.wallet_name
+                    "No input can be signed with wallet {wallet_name}"
                 )));
             }
         }
@@ -342,6 +342,42 @@ fn get_wallet(db: &sled::Tree, wallet_name: &str) -> Result<HeritagePrivateWalle
         .get(wallet_name)?
         .expect("wallet should be in DB at this point");
     Ok(serde_json::from_slice(&res)?)
+}
+
+fn delete_wallet(db: &sled::Tree, wallet_name: &str) -> Result<(), Error> {
+    let current_wallet_list = db.get(WALLET_NAMES_DB_KEY)?;
+
+    if !db_key_exist(&db, wallet_name)? {
+        return Err(Error::Generic(format!(
+            "Wallet with name {wallet_name} does not exist"
+        )));
+    }
+    let new_wallet_list = match &current_wallet_list {
+        Some(ivec) => {
+            let mut wallets_names: Vec<String> = serde_json::from_slice(ivec)?;
+            wallets_names.retain(|w| w != wallet_name);
+            wallets_names
+        }
+        None => {
+            return Err(Error::Generic(format!(
+                "Wallet with name {wallet_name} does not exist"
+            )));
+        }
+    };
+    let new_wallet_list: Vec<u8> = serde_json::to_vec(&new_wallet_list)?;
+    let new_wallet_list: &[u8] = new_wallet_list.as_ref();
+
+    db.transaction(|tx_db| {
+        tx_db.remove(wallet_name)?;
+        let wallets_names = tx_db.remove(WALLET_NAMES_DB_KEY)?;
+        if wallets_names != current_wallet_list {
+            abort("Wallet list changed")?;
+        }
+        tx_db.insert(WALLET_NAMES_DB_KEY, new_wallet_list)?;
+        Ok(())
+    })
+    .map_err(|e| Error::Generic(e.to_string()))?;
+    Ok(())
 }
 
 fn generate_mnemonic(word_count: WordCount) -> Result<Mnemonic, Error> {

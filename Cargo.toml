@@ -1,6 +1,6 @@
 [package]
 name = "heritage-offline-cli"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Crypto7 <john@crypto7.world>"]
 description = "A simple CLI binary managing private keys, made to work in tandem with the btc-heritage library"

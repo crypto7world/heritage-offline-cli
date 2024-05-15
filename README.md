@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 MD041 -->
 <div id="top"></div>
 
 <!-- PROJECT SHIELDS -->
@@ -88,7 +89,7 @@ By installing the [`heritage-offline-cli`] on an air-gapped computer you will ha
 
 Another advantage of this setup is that you only have to verify/trust the [`heritage-offline-cli`]: the [btcherit.com][heritage-wallet-service] service does not know your private keys and cannot steal your coin!
 
-### Yeah, but I don't want to depend on an online service at all...
+### Yeah, but I don't want to depend on an online service at all
 
 And I understand! Be patient, and take a look at the roadmap: before the year is over, a new CLI will be available in the [`btc-heritage`] project.
 
@@ -114,10 +115,10 @@ You can find precompiled binaries for the major platforms in the Release section
 
 [Latest version](https://github.com/crypto7world/heritage-offline-cli/releases/latest) - [All releases](https://github.com/crypto7world/heritage-offline-cli/releases)
 
-If you wish to install the `v0.2.0` for Linux, you can run:
+If you wish to install the `v0.3.0` for Linux, you can run:
 
 ```shell
-version="v0.2.0"
+version="v0.3.0"
 wget https://github.com/crypto7world/heritage-offline-cli/releases/download/${version}/heritage-offline-cli-${version}-x86_64-unknown-linux-gnu.tar.gz
 tar xvzf heritage-offline-cli-${version}-x86_64-unknown-linux-gnu.tar.gz
 ./heritage-offline-cli # to verify it worked, should display usage instructions
@@ -161,7 +162,7 @@ Or, to get help about a specific command `heritage-offline-cli help <command>`, 
 heritage-offline-cli help generate
 ```
 
-```
+```text
 Generate a new wallet
 
 Usage: heritage-offline-cli generate [OPTIONS]
@@ -334,7 +335,7 @@ Distributed under the MIT License. See [`LICENSE`][license-url] for more informa
 
 ## Contact
 
-John Galt - [@Crypto7W](https://twitter.com/Crypto7W) - john@crypto7.world
+John Galt - [@Crypto7W](https://twitter.com/Crypto7W) - <john@crypto7.world>
 
 Though my real name is Jérémie Rodon ([LinkedIn][jr-linkedin-url], [GitHub][jr-github-url]), I operate this project under the pseudonym John Galt in reference to the character of _Ayn Rand_ novel [**Atlas Shrugged**](https://www.amazon.com/Atlas-Shrugged-Ayn-Rand-ebook/dp/B003V8B5XO) (and, yes, I obviously embrace John Galt philosophy).
 

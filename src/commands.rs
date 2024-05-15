@@ -16,6 +16,10 @@ pub struct CliOpts {
     /// Sets the wallet data directory.
     pub datadir: String,
 
+    #[arg(short, long, default_value = "default_wallet")]
+    /// The name of the wallet to use.
+    pub wallet_name: String,
+
     #[command(subcommand)]
     /// Top level cli sub-commands.
     pub subcommand: CliSubCommand,
@@ -55,6 +59,15 @@ pub enum CliSubCommand {
         /// Confirm that you know what you are doing
         i_understand_what_i_am_doing: bool,
     },
+    /// Delete a wallet from the internal database
+    /// {n}/!\ BEWARE THAT YOUR BITCOINS MAY BE LOST FOREVER IF YOU HAVE NO BACKUP OF YOU SEED /!\
+    DeleteWallet {
+        #[command(flatten)]
+        wallet_opts: WalletOpts,
+        #[arg(long, required = true, action)]
+        /// Confirm that you understand that you will loose your bitcoins you have no backup
+        i_understand_that_i_will_lost_my_keys_forever_if_i_have_no_backup: bool,
+    },
     /// Restore a wallet from its mnemonic
     Restore {
         /// The mnemonic from which to restore
@@ -84,10 +97,10 @@ pub enum CliSubCommand {
     },
     /// Return the given PSBT after signing everything the wallet can in it
     Sign {
-        /// The PSBT to sign
-        psbt: String,
         #[command(flatten)]
         wallet_opts: WalletOpts,
+        /// The PSBT to sign
+        psbt: String,
     },
     /// Display infos on the PSBT
     DisplayPsbt {
@@ -102,9 +115,9 @@ pub enum CliSubCommand {
 /// Config options wallet operations can take.
 #[derive(Debug, Parser, Clone, PartialEq, Eq)]
 pub struct WalletOpts {
-    #[arg(short, long, default_value = "default_wallet")]
+    #[arg(short, long)]
     /// The name of the wallet to use.
-    pub wallet_name: String,
+    pub wallet_name: Option<String>,
 }
 
 /// Config options mnemonic operations can take.
